@@ -19,14 +19,14 @@ def _createSwiftService(configPath):
 
     options = {
         'os_auth_url': config['AUTHORIZATION']['osAuthUrl'],
-        'application_id': config['SECRET']['applicationId'],
-        'application_secret': config['SECRET']['applicationSecret'],
+        'id': config['AUTHORIZATION']['id'],
+        'secret': config['AUTHORIZATION']['secret'],
     }
 
     auth_swift = v3.application_credential.ApplicationCredential(
         options['os_auth_url'],
-        application_credential_id=options['application_id'],
-        application_credential_secret=options['application_secret']
+        application_credential_id=options['id'],
+        application_credential_secret=options['secret']
     )
 
     session_client = session.Session(auth=auth_swift)

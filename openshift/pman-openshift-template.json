@@ -71,7 +71,7 @@
                   "readOnly": true
                 }
               ],
-              "image": "fnndsc/pman",
+              "image": "arnavn/pman_sso",
               "imagePullPolicy": "Always",
               "name": "pman",
               "ports": [{
@@ -95,7 +95,7 @@
                 },
                 {
                   "name": "OPENSHIFTMGR_PROJECT",
-                  "value": "radiology"
+                  "value": "radiology-staging"
                 },
                 {
                   "name": "STORAGE_TYPE",
@@ -210,7 +210,7 @@
                                   },
                                   {
                                     "name": "OPENSHIFTMGR_PROJECT",
-                                    "value": "radiology"
+                                    "value": "radiology-staging"
                                   }],
                                   "volumeMounts": [{
                                     "name": "kubecfg-volume",
