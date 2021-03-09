@@ -14,7 +14,8 @@ class OpenShiftManager(object):
     def __init__(self, project=None):
         self.kube_client = None
         self.kube_v1_batch_client = None
-        self.project = project or os.environ.get('OPENSHIFTMGR_PROJECT') or 'myproject'
+        #self.project = project or os.environ.get('OPENSHIFTMGR_PROJECT') or 'myproject'
+        self.project = 'test-moc'
 
         # init the openshift client
         self.init_openshift_client()

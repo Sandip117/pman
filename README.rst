@@ -1,15 +1,16 @@
-#################
-pman - v2.2.0.0
-#################
+#############
+pman v3.0.0.0
+#############
 
-.. image:: https://badge.fury.io/py/pman.svg
-    :target: https://badge.fury.io/py/pman
-
-.. image:: https://travis-ci.org/FNNDSC/pman.svg?branch=master
-    :target: https://travis-ci.org/FNNDSC/pman
-
-.. image:: https://img.shields.io/badge/python-3.5%2B-blue.svg
-    :target: https://badge.fury.io/py/pman
+.. image:: https://img.shields.io/docker/v/fnndsc/pman?sort=semver
+    :alt: Docker Image Version
+    :target: https://hub.docker.com/r/fnndsc/pman
+.. image:: https://img.shields.io/github/license/fnndsc/pfioh
+    :alt: MIT License
+    :target: https://github.com/FNNDSC/pman/blob/master/LICENSE
+.. image:: https://github.com/FNNDSC/pman/workflows/ci/badge.svg
+    :alt: Github Actions
+    :target: https://github.com/FNNDSC/pman/actions
 
 .. contents:: Table of Contents
 
@@ -17,102 +18,63 @@ pman - v2.2.0.0
 Overview
 ********
 
-This repository proves ``pman`` -- a process manager.
+This repository provides ``pman`` -- a process manager, that provides a unified API over HTTP for running jobs on
 
-pman
-====
+* docker swarm
+* Openshift
 
-Most simply, ``pman`` manages processes, i.e. programs or applications that are run by an underlying system. Typically, these processes are command line applications (i.e. have no GUI) and usually do not interact really with a user at all. The primary purpose of ``pman`` is to provide other software agents the ability to execute processes via ``http``.
+For more info see
+https://github.com/FNNDSC/pman/wiki/pman-overview
 
-Originally, ``pman`` was designed to track simple processes executed on the local system. In addition, ``pman`` keeps a record of the current and historical state of processes that it has executed and is thus able to respond to queries about the processes. Some of the queries that ``pman`` can address are
+***********
+Basic Usage
+***********
 
-- *state*: Is job <XYZ> still running?
-- *result*: What is the stdout (or stderr) from job <XYZ>?
-- *control*: Kill job <XYZ>
-
-``pman`` also maintains a persistent human-readable/friendly database-in-the-filesystem of jobs and states of jobs.
-
-Current versions of ``pman`` however can use container-based backends (swarm and openshift) to execute processes. In those cases, the internal database of tracking jobs becomes superfluous. Future versions of ``pman`` might depreciate the local/internal DB tracking.
+The most common use case for ``pman`` is for running jobs against *docker swarm*.
 
 
-************
-Installation
-************
-
-Installation is relatively straightforward, and we recommend using either python virtual environments or docker.
-
-Python Virtual Environment
-==========================
-
-On Ubuntu, install the Python virtual environment creator
+Start pman
+==========
 
 .. code-block:: bash
 
-  sudo apt install virtualenv virtualenvwrapper
-
-Then, create a directory for your virtual environments e.g.:
-
-.. code-block:: bash
-
-  mkdir ~/python-envs
-
-You might want to add to your .bashrc file these two lines:
+    git clone https://github.com/FNNDSC/pman.git
+    cd pman
+    git checkout flask
+    docker build -t local/pman:dev .
+    
+In ``docker-compose_dev.yml`` change ``PMANREPO`` to ``local``
 
 .. code-block:: bash
 
-    export WORKON_HOME=~/python-envs
-    source /usr/local/bin/virtualenvwrapper.sh
+    ./make.sh
+    
 
-(Note depending on distro, the ``virtualenvwrapper.sh`` path might be
+Example Job
+===========
 
-.. code-block:: bash
-
-    /usr/share/virtualenvwrapper/virtualenvwrapper.sh
-
-Then you can source your .bashrc and create a new Python3 virtual environment:
+Simulate incoming data
 
 .. code-block:: bash
 
-    source .bashrc
-    mkvirtualenv --python=python3 python_env
+    pman_dev=$(docker ps -f ancestor=local/pman:dev -f name=pman_service -q)  
+    docker exec -it $pman_dev mkdir -p /home/localuser/storeBase/key-chris-jid-1/incoming
+    docker exec -it $pman_dev mkdir -p /home/localuser/storeBase/key-chris-jid-1/outgoing
+    docker exec -it $pman_dev touch /home/localuser/storeBase/key-chris-jid-1/incoming/test.txt
 
-To activate or "enter" the virtual env:
 
-.. code-block:: bash
-
-    workon python_env
-
-To deactivate virtual env:
+Using `HTTPie <https://httpie.org/>` to run a container
 
 .. code-block:: bash
 
-    deactivate
+    http POST http://localhost:5010/api/v1/ cmd_args='--saveinputmeta --saveoutputmeta --dir cube/uploads' cmd_path_flags='--dir' auid=cube number_of_workers=1 cpu_limit=1000 memory_limit=200 gpu_limit=0 image=fnndsc/pl-dircopy selfexec=dircopy selfpath=/usr/local/bin execshell=/usr/local/bin/python type=fs jid=chris-jid-1
 
-
-Using the ``fnndsc/pman`` dock
-==============================
-
-The easiest option however, is to just use the ``fnndsc/pman`` dock.
+Get the result
 
 .. code-block:: bash
 
-    docker pull fnndsc/pman
-
-and then run
-
-.. code-block:: bash
-
-    docker run  --name pman         \
-                -v /home:/Users     \
-                --rm -ti            \
-                fnndsc/pman         \
-                --rawmode 1 --http  \
-                --port 5010         \
-                --listeners 12
-
-*****
-Usage
-*****
+    http http://localhost:5010/api/v1/chris-jid-1/
+    
 
 ``pman`` usage
 ===============
@@ -130,44 +92,14 @@ For ``pman`` detailed information, see the `pman wiki page <https://github.com/F
         [--port <port>]
         The port on which to listen. Defaults to '5010'.
 
-        [--protocol <protcol>]
-        The protocol to interpret. Defaults to 'tcp'.
-
-        [--rawmode]
-        Internal zmq socket server mode. A value of '1' is usually used
-        here.
-
-        [--listeners <numberOfListenerThreads>]
-        The number of internal threads to which requests are dispatched.
-
-        [--http]
-        Send return strings as HTTP formatted replies with content-type html.
-
-        [--debugToFile]
-        If specified, send debugging results to file.
-
-        [--debugToFile <file>]
-        In conjunction with --debugToFile, file which will receive debugging info.
-
-        [--listenerSleep <time>]
-        A small delay in the listener loop to prevent busy-wait.
-        Default is 0.1 seconds.
-
-        [--directiveFile <directiveFile>]
-        The location of a message-conformant <directiveFile>. If this file
-        if found by the FileIO thread, its contents will be read and
-        executed, after which the file will be deleted.
-T
-        [--DBsavePeriod <time>]
-        The periodicity in seconds for the internal DB save.
-
         [--enableTokenAuth]
-        Enables token based authorization and can be configured to look for a .ini
-        file or an openshift secret.
+        Enables token based authorization and can be configured to look
+        for a .ini file or an openshift secret.
 
         [--tokenPath <tokenPath>]
         Specify the absolute path to the token in the file system.
-        By default, this looks for the pfiohConfig.ini file in the current working directory.
+        By default, this looks for the pfiohConfig.ini file in the current
+        working directory.
 
         [-x|--desc]
         Provide an overview help page.
@@ -179,25 +111,6 @@ T
         Print internal version number and exit.
 
         [-v|--verbosity <level>]
-        Set the verbosity level. "0" typically means no/minimal output. Allows for
-        more fine tuned output control as opposed to '--quiet' that effectively
-        silences everything.
-
-        --container-env <env>
-        The container env within which to run.
-
-********
-EXAMPLES
-********
-
-Start ``pman`` with 12 listeners:
-
-.. code-block:: bash
-
-        pman                                                        \\
-                --ip 127.0.0.1                                      \\
-                --port 5010                                         \\
-                --rawmode 1                                         \\
-                --http                                              \\
-                --listeners 12                                      \\
-                --verbosity 1
+        Set the verbosity level. "0" typically means no/minimal output.
+        Allows for more fine tuned output control as opposed to '--quiet'
+        that effectively silences everything.

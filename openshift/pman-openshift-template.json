@@ -52,8 +52,11 @@
                 "--port=5010",
                 "--listeners=12",
                 "--container-env=openshift",
-                "--enableTokenAuth",
-                "--tokenPath=/etc/pman/auth/pman_config.cfg"
+                "--enableTokenAuth",     
+                "--tokenPath=/etc/pman/auth/pman_config.cfg",
+                "--verbosity=5"
+
+
               ],
               "volumeMounts": [{
                   "name": "kubecfg-volume",
@@ -71,7 +74,7 @@
                   "readOnly": true
                 }
               ],
-              "image": "arnavn/pman_sso",
+              "image": "sandip117/pman:flask",
               "imagePullPolicy": "Always",
               "name": "pman",
               "ports": [{
@@ -95,11 +98,15 @@
                 },
                 {
                   "name": "OPENSHIFTMGR_PROJECT",
-                  "value": "radiology-staging"
+                  "value": "test-moc"
                 },
                 {
                   "name": "STORAGE_TYPE",
                   "value": "swift"
+                },
+                {
+                  "name": "CONTAINER_ENV",
+                  "value": "openshift"
                 }
               ]
             }],
@@ -176,61 +183,8 @@
           "weight": 100
         }
       }
-    },
-    {
-      "apiVersion": "batch/v1beta1",
-      "kind": "CronJob",
-      "metadata":{
-        "labels":{
-          "job-origin":"pman"
-      },
-          "name": "pman-reaper"
-      },
-      "spec":{
-          "schedule": "*/30 * * * ?",    
-          "jobTemplate":{
-              "spec":{
-                "activeDeadlineSeconds" : 1200,
-                  "template":{
-                    "metadata":{
-                      "labels":{
-                        "job-origin": "pman-reaper"
-                      },
-                      "name": "pman-reaper"
-                    },
-                      "spec":{
-                          "containers":[{
-                                  "name": "pman-reaper",
-                                  "image": "fnndsc/pman-reaper",
-                                  "imagePullPolicy": "Always",
-                                  "command": ["python3", "reaper.py"],
-                                  "env": [{
-                                    "name": "KUBECFG_PATH",
-                                    "value": "/tmp/.kube/config"
-                                  },
-                                  {
-                                    "name": "OPENSHIFTMGR_PROJECT",
-                                    "value": "radiology-staging"
-                                  }],
-                                  "volumeMounts": [{
-                                    "name": "kubecfg-volume",
-                                    "mountPath": "/tmp/.kube/",
-                                    "readOnly": true
-                                  }]
-                              }],
-                          "volumes": [{
-                            "name": "kubecfg-volume",
-                            "secret": {
-                              "secretName": "kubecfg"
-                            }
-                          }],
-                          "restartPolicy": "Never"
-                      }
-                  }
-              }
-          }             
-      }
-  }
+    }
+     
 ],
   "labels": {
     "template": "application-template-pman-openshift"

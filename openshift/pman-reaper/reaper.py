@@ -37,7 +37,7 @@ class Reaper(object):
         """
         jobs_for_reaper = []
         try: 
-            api_response = self.kube_v1_batch_client.list_namespaced_job(namespace=self.project, label_selector='job-origin=pman', async_req=True)
+            api_response = self.kube_v1_batch_client.list_namespaced_job(namespace=self.project, label_selector='job-origin=pman', include_uninitialized=True)
             for item in api_response.items:
                 # Checking if job has finished running, either failed or succeeded
                 if item.status.conditions and (item.status.failed or item.status.succeeded):
